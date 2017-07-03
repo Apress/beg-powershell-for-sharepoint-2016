@@ -1,0 +1,258 @@
+Domain Controller
+
+$domainName = "contoso.com"
+$safeModeAdminPassword = ConvertTo-SecureString "pass@word1" -AsPlainText -Force
+
+Add-WindowsFeature AD-Domain-Services -IncludeManagementTools
+
+Install-ADDSForest -DomainName $domainName -SafeModeAdministratorPassword $safeModeAdminPassword -Confirm:$false
+
+
+--------------------------------------------------------------------------------------------------------------------
+
+Users and Groups
+
+The following lines of script will take care of automatically creating these groups.
+New-ADGroup -DisplayName "Administration" -GroupScope DomainLocal -Name "Administration"
+New-ADGroup -DisplayName "Finance" -GroupScope DomainLocal -Name "Finance"
+New-ADGroup -DisplayName "Human Resources" -GroupScope DomainLocal -Name "Human Resources"
+New-ADGroup -DisplayName "Directors" -GroupScope DomainLocal -Name "Directors"
+New-ADGroup -DisplayName "Tech Support" -GroupScope DomainLocal -Name "Tech Support"
+
+
+
+$usersPassword = ConvertTo-SecureString "pass@word1" -AsPlainText -Force
+
+New-ADUser -Name "JSmith" -GivenName "John" -Surname "Smith" -AccountPassword $usersPassword 
+-UserPrincipalName "jsmith@contoso.com" -DisplayName "John Smith"
+Enable-ADAccount -Identity "JSmith"
+Add-ADGroupMember -Identity "Administration" -Member "JSmith"
+
+New-ADUser -Name "BMoores" -GivenName "Bob" -Surname "Moores" -AccountPassword $usersPassword 
+-UserPrincipalName "bmoores@contoso.com" -DisplayName "Bob Moores"
+Enable-ADAccount -Identity "BMoores"
+Add-ADGroupMember -Identity "Finance" -Member "BMoores"
+
+
+New-ADUser -Name "PHarris" -GivenName "Peter" -Surname "Harris" -AccountPassword $usersPassword -UserPrincipalName "pharris@contoso.com" -DisplayName "Peter Harris"
+Enable-ADAccount -Identity "PHarris"
+Add-ADGroupMember -Identity "Human Resources" -Member "PHarris"
+
+New-ADUser -Name "KButtler" -GivenName "Kyle" -Surname "Buttler" -AccountPassword $usersPassword -UserPrincipalName "kbuttler@contoso.com" -DisplayName "Kyle Buttler"
+Enable-ADAccount -Identity "KButtler"
+Add-ADGroupMember -Identity "Directors" -Member "KButtler"
+
+New-ADUser -Name "MRanger" -GivenName "Mike" -Surname "Ranger" -AccountPassword $usersPassword 
+-UserPrincipalName "mranger@contoso.com" -DisplayName "Mike Ranger"
+Enable-ADAccount -Identity "MRanger"
+Add-ADGroupMember -Identity "Tech Support" -Member "MRanger"
+
+
+--------------------------------------------------------------------------------------------------------------------
+
+Application Server Role
+
+Add-WindowsFeature Application-Server, AS-HTTP-Activation, AS-Named-Pipes, AS-Net-Framework, AS-TCP-Activation, AS-TCP-Port-Sharing, AS-WAS-Support, AS-Web-Support, Net-Framework-Features, Server-Media-Foundation, WAS, WAS-Config-APIs, WAS-NET-Environment, WAS-Process-Model, Web-App-Dev, Web-Asp-Net, Web-Basic-Auth, Web-Common-Http, Web-Default-Doc, Web-Digest-Auth, Web-Dir-Browsing, Web-Dyn-Compression, Web-Filtering, Web-Health, Web-Http-Errors, Web-Http-Logging, Web-Http-Tracing, Web-ISAPI-Ext, Web-ISAPI-Filter, Web-Lgcy-Scripting, Web-Log-Libraries, Web-Metabase, Web-Mgmt-Compat, Web-Mgmt-Console, Web-Mgmt-Tools, Web-Net-Ext, Web-Performance, Web-Request-Monitor, Web-Security, Web-Server, Web-Stat-Compression, Web-Static-Content, Web-WebServer, Web-Windows-Auth, Windows-Identity-Foundation, Xps-Viewer –Source:E:\source\sxs\
+ 
+
+ 
+--------------------------------------------------------------------------------------------------------------------
+ Installing SQL Server 2014
+
+ $sqlSAPassword = "pass@word1"
+
+$sqlProcess = new-object System.Diagnostics.Process
+$sqlProcess.StartInfo.Filename = "D:\setup.exe"
+$sqlProcess.StartInfo.Arguments = "/QS /ACTION=install /IACCEPTSQLSERVERLICENSETERMS=1 /FEATURES=SQL /INSTANCENAME=MSSQLSERVER /INSTANCEID=MSSQLSERVER /SQLSYSADMINACCOUNTS=contoso\Administrator /SECURITYMODE=SQL /SAPWD=$sqlSAPassword /INDICATEPROGRESS /AGTSVCSTARTUPTYPE=Automatic /TCPENABLED=1"
+$sqlProcess.Start()
+
+--------------------------------------------------------------------------------------------------------------------
+
+Installing SharePoint Prerequisites
+
+
+$LocalPath = "C:\SP2016Prereqs"
+
+New-Item -ItemType Directory -Force -Path $localPath
+
+# Array with all urls…a bit messy
+$files = @("https://download.microsoft.com/download/9/1/3/9138773A-505D-43E2-AC08-9A77E1E0490B/1033/x64/sqlncli.msi","https://download.microsoft.com/download/D/7/2/D72FD747-69B6-40B7-875B-C2B40A6B2BDD/Windows6.1-KB974405-x64.msu", " http://download.microsoft.com/download/0/1/D/01D06854-CA0C-46F1-ADBA-EBF86010DCC6/rtm/MicrosoftIdentityExtensions-64.msi", " http://download.microsoft.com/download/E/0/0/E0060D8F-2354-4871-9596-DC78538799CC/Synchronization.msi", "http://download.microsoft.com/download/A/6/7/A678AB47-496B-4907-B3D4-0A2D280A13C0/WindowsServerAppFabricSetup_x64.exe", "http://download.microsoft.com/download/7/B/5/7B51D8D1-20FD-4BF0-87C7-4714F5A1C313/AppFabric1.1-RTM-KB2671763-x64-ENU.exe", "https://download.microsoft.com/download/3/C/F/3CF781F5-7D29-4035-9265-C34FF2369FA2/setup_msipc_x64.exe", "https://download.microsoft.com/download/1/C/A/1CAA41C7-88B9-42D6-9E11-3C655656DAB1/WcfDataServices.exe","https://download.microsoft.com/download/E/2/1/E21644B5-2DF2-47C2-91BD-63C560427900/NDP452-KB2901907-x86-x64-AllOS-ENU.exe", "http://download.microsoft.com/download/2/E/6/2E61CFA4-993B-4DD4-91DA-3737CD5CD6E3/vcredist_x64.exe", "http://download.microsoft.com/download/C/6/9/C690CC33-18F7-405D-B18A-0A8E199E531C/Windows8.1-KB2898850-x64.msu")
+
+$fileName = ""
+$pathParts
+
+foreach($file in $files)
+{
+    $pathParts = $file.Split("/")
+    $fileName = $pathParts[$pathParts.Length -1]
+    $fullName = "$localPath\$fileName"
+    Invoke-WebRequest $file -OutFile $fullName
+}
+
+$prereqProcess = new-object System.Diagnostics.Process
+$prereqProcess.StartInfo.Filename = "F:\prerequisiteinstaller.exe"
+$prereqProcess.StartInfo.Arguments = "/SQLNCli:$LocalPath\sqlncli.msi /IDFX:$LocalPath\Windows6.1-KB974405-x64.msu /IDFX11:$LocalPath\MicrosoftIdentityExtensions-64.msi /Sync:$LocalPath\Synchronization.msi /AppFabric:$LocalPath\WindowsServerAppFabricSetup_x64.exe /KB2671763:$LocalPath\AppFabric1.1-RTM-KB2671763-x64-ENU.exe /MSIPCClient:$LocalPath\setup_msipc_x64.exe /WCFDataServices56:$LocalPath\WcfDataServices.exe /DotNet452:$LocalPath\NDP452-KB2901907-x86-x64-AllOS-ENU.exe /MSVCRT12:$LocalPath\vcredist_x64.exe /KB2898850:$LocalPath\Windows8.1-KB2898850-x64.msu /unattended"
+$prereqProcess.Start()
+$prereqProcess.WaitForExit()
+
+--------------------------------------------------------------------------------------------------------------------
+
+Installing SharePoint
+
+
+$productKey = "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" # Replace by your own
+
+$spLocalPath = "C:\SP2016\"
+$spConfigFile = $spLocalPath + "config.xml"
+
+New-Item -ItemType Directory -Force -Path $spLocalPath
+Copy-Item F:\files\setupfarmsilent\config.xml $spLocalPath
+$configContent =[io.file]::ReadAllText($spConfigFile)
+
+Get-ChildItem $spConfigFile -Recurse |
+    Where-Object {$_.GetType().ToString() -eq "System.IO.FileInfo"} |
+    Set-ItemProperty -Name IsReadOnly -Value $false
+
+$configContent = $configContent -Replace "<!--", ""
+$configContent = $configContent -Replace "-->", "" 
+$configContent = $configContent -Replace "Enter Product Key Here", $productKey
+$configContent = $configContent -Replace """none""", """basic"""
+
+$configContent | Out-File $spConfigFile
+
+
+$spProcess = new-object System.Diagnostics.Process
+$spProcess.StartInfo.Filename = "F:\setup.exe"
+$spProcess.StartInfo.Arguments = "/config C:\SP2016\config.xml"
+$spProcess.Start()
+$spProcess.WaitForExit()
+ 
+--------------------------------------------------------------------------------------------------------------------
+ Configuring Your SharePoint Farm
+ 
+ Creating the Databases
+ 
+ $spConfigDBName = "SPConfig" # Config DB name, replace by your own;
+$spAdminDBName = "SPAdmin" # Admin DB name, replace by your own;
+$spPassphrase = "pass@word1" # Recommendation is to change this to something else;
+$spFarmAdminPassword = "pass@word1" # replace by your admin account password;
+
+# Convert the provided Passphrase to a secure string
+$securePassphrase = ConvertTo-SecureString $spPassphrase -asPlainText -force
+
+# Convert the provided Admin account's password to secure string and create a new PowerShell Credentials object to represent the Administrator's account;
+$secureAdminPassword = ConvertTo-SecureString $spFarmAdminPassword -asPlainText -force
+$spFarmAdmin = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "contoso\administrator", $secureAdminPassword
+
+# Load the SharePoint PowerShell cmdlets
+Add-PSSnapin Microsoft.SharePoint.PowerShell
+
+New-SPConfigurationDatabase -DatabaseServer $env:COMPUTERNAME -DatabaseName $spConfigDBName 
+-AdministrationContentDatabaseName $spAdminDBName -Passphrase $securePassphrase -FarmCredentials $spFarmAdmin –LocalServerRole SingleServerFarm
+--------------------------------------------------------------------------------------------------------------------
+
+Configuring Central Administration
+
+$centralAdminPort = 7777
+New-SPCentralAdministration -Port $centralAdminPort -WindowsAuthProvider "NTLM"
+
+--------------------------------------------------------------------------------------------------------------------
+
+Creating Your First Web Application
+
+$webAppPort = 80
+
+$authProvider = New-SPAuthenticationProvider
+$adminManagedAccount = Get-SPManagedAccount "contoso\Administrator"
+New-SPWebApplication -Name "Demo Gateway" -ApplicationPool "DemoGatewayPool" 
+-ApplicationPoolAccount $adminManagedAccount -Port $webAppPort -AuthenticationProvider $authProvider
+
+Install-SPFeature -AllExistingFeatures -Force # Active all required Farm Features
+
+--------------------------------------------------------------------------------------------------------------------
+Creating Your Root Site Collection
+
+$blankSiteTemplate = Get-SPWebTemplate STS#1
+New-SPSite -Url "http://localhost/" -Name "Home" -Template $blankSiteTemplate -OwnerAlias "contoso\administrator"
+--------------------------------------------------------------------------------------------------------------------
+
+Granting Users Access
+
+$web = Get-SPWeb http://localhost
+$user = $web.EnsureUser("Contoso\Administration")
+Set-SPUser -Identity $user -web $web -AddPermissionLevel "Design"
+
+$user = $web.EnsureUser("Contoso\Finance")
+Set-SPUser -Identity $user -web $web -AddPermissionLevel "Contribute"
+
+$user = $web.EnsureUser("Contoso\Human Resources")
+Set-SPUser -Identity $user -web $web -AddPermissionLevel "Contribute"
+
+$user = $web.EnsureUser("Contoso\Directors")
+Set-SPUser -Identity $user -web $web -AddPermissionLevel "Read"
+
+$user = $web.EnsureUser("Contoso\Tech Support")
+Set-SPUser -Identity $user -web $web -AddPermissionLevel "Full Control"
+--------------------------------------------------------------------------------------------------------------------
+
+
+Writing to the Registry
+
+Set-ItemProperty -Path <KeyPath> -Name "<PropertyName>" -Value "<PropertyValue>"
+
+RemoveItemProperty -Path <KeyPath> -Name "<KeyName>"
+
+--------------------------------------------------------------------------------------------------------------------
+
+Automatic Login
+
+Function AutoLogonAfterReboot
+{
+    $WinLogonKey = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\WinLogon"
+
+    Set-ItemProperty $WinLogonKey "DefaultUserName" "Administrator" 
+    Set-ItemProperty $WinLogonKey "DefaultPassword" "pass@word1"
+    Set-ItemProperty $WinLogonKey "AutoAdminLogon" "1" 
+    Set-ItemProperty $WinLogonKey "AutoLogonCount" "1" 
+    Set-ItemProperty $WinLogonKey "DefaultDomainName" "Contoso" 
+}
+
+--------------------------------------------------------------------------------------------------------------------
+
+
+Script Orchestrator
+
+# Receives the name of a step and determines if it's the next logical step to execute;
+Function IsCurrentStep($nextStep) 
+{
+    if ($global:startingStep -eq $nextStep -or $global:isStarted) {
+        $global:started = $TRUE
+    }
+    return $global:started}
+
+# Set the next command to execute upon rebooting in the registry key. 
+Function SetNextStep($script, $step) 
+{
+    Set-ItemProperty $runKey $global:restartKey "$global:powershell $script -Step $step"
+    Restart-Computer
+    exit
+}
+
+
+if (IsCurrentStep "ASP.NET") 
+{
+    …
+}
+
+if (IsCurrentStep "DomainController") 
+{
+    SetNextStep $script "GroupsAndUsers" # Computer will reboot after this line;
+}
+
+if (IsCurrentStep "GroupsAndUsers") 
+{
+    … # Execution will restart here after reboot;
+    SetNextStep $script "NextStepName" # Computer will reboot after this line;
+}
+…
+

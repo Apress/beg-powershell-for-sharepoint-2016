@@ -1,0 +1,118 @@
+$excelServer = Get-SPFeature | Where{$_.DisplayName -eq "ExcelServer"}
+$excelServer
+
+---------------------------------------------------------------------------
+
+$groupWork = Get-SPFeature | Where{$_.DisplayName -eq "GroupWork"}
+Enable-SPFeature -URL http://localhost -Identity $groupWork
+
+
+--------------------------------------------------------------------------
+
+$groupWork = Get-SPFeature | Where{$_.DisplayName -eq "GroupWork"}
+Disable-SPFeature -URL http://localhost -Identity $groupWork -Confirm:$false
+
+--------------------------------------------------------------------------
+Backup-SPFarm -Directory \\localhost\Backups\ -BackupMethod Full
+--------------------------------------------------------------------------
+
+Viewing Backup History
+
+Get-SPBackupHistory -Directory \\localhost\Backups\ | Format-List
+
+--------------------------------------------------------------------------
+
+Automating a Site Collection Backup
+
+Backup-SPSite -Identity http://localhost -Path \\localhost\Backups\RootSite.bak
+--------------------------------------------------------------------------
+
+
+Restores
+
+$farmAccount = Get-Credential Contoso\Administrator
+Restore-SPFarm -Directory \\localhost\Backups\ -RestoreMethod Overwrite -FarmCredentials $farmAccount
+
+Restore-SPSite http://localhost -Path \\localhost\Backups\RootSite.bak -Force
+
+--------------------------------------------------------------------------
+
+Timer Jobs
+
+$dailyJobs = Get-SPTimerJob | Where{$_.Schedule -like "daily*"}
+
+--------------------------------------------------------------------------
+
+
+Disabling a Timer Job
+
+$appDiagnosticsJob = Get-SPTimerJob | Where{$_.DisplayName -eq "Diagnostic Data Provider: App Usage"}
+Disable-SPTimerJob $appDiagnosticsJob
+
+--------------------------------------------------------------------------
+
+
+Enabling a Timer Job
+
+
+$appDiagnosticsJob = Get-SPTimerJob | Where{$_.DisplayName -eq "Diagnostic Data Provider: App Usage"}
+Enable-SPTimerJob $appDiagnosticsJob
+
+--------------------------------------------------------------------------
+
+Changing a Timer Job’s Schedule
+
+$upEvalCreation = Get-SPTimerJob | Where{$_.DisplayName -eq "Create Upgrade Evaluation Site Collections job"}
+ 
+Set-SPTimerJob -Identity $upEvalCreation[0] -Schedule "Hourly between 5 and 10"
+
+
+$DeleteJobHistory = Get-SPTimerJob | Where{$_.DisplayName -eq "Delete Job History"}
+Start-SPTimerJob -Identity $DeleteJobHistory
+
+--------------------------------------------------------------------------
+
+
+Managing Services
+
+Get-SPServiceInstance | Where{$_.Status -eq "Online"} | Format-Table
+
+--------------------------------------------------------------------------
+
+Starting a SharePoint Service Instance
+
+$visioServiceInstance = Get-SPServiceInstance -Server "WIN-RBRR22MRAOR" |Where{$_.TypeName -Eq "Visio Graphics Service"}
+ 
+Start-SPServiceInstance $visioServiceInstance
+
+--------------------------------------------------------------------------
+$visioServiceInstance = Get-SPServiceInstance -Server "WIN-RBRR22MRAOR" |
+Where{$_.TypeName -Eq "Visio Graphics Service"}
+ 
+Stop-SPServiceInstance $visioServiceInstance
+
+--------------------------------------------------------------------------
+
+SharePoint Health Analyzer
+
+Get-SPHealthAnalysisRule | Format-Table -Property Name, Summary
+
+--------------------------------------------------------------------------
+
+Disabling a SharePoint Health Analyzer Rule
+
+# The code below uses the name of the rule, instead of the display name.
+# These very often vary from one another.
+$rule = Get-SPHealthAnalysisRule | Where{$_.Name -eq "ContentDatabaseCorruption"}
+ 
+Disable-SPHealthAnalysisRule $rule
+
+--------------------------------------------------------------------------
+
+
+Enabling a SharePoint Health Analyzer Rule
+
+code will reenable the “Missing server side dependencies” rule that you’ve disabled in the previous section:
+$rule=Get-SPHealthAnalysisRule|Where{$_.Name -eq "ContentDatabaseCorruption"}
+Enable-SPHealthAnalysisRule $rule
+

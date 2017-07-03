@@ -1,0 +1,14 @@
+Upgrade Content Database
+
+$ap = New-SPAuthenticationProvider
+$admin = Get-SPManagedAccount domain\admin  
+ 
+$webApp = New-SPWebApplication -Name "DemoWebApp" -URL "http://localhost:8333" -ApplicationPool"DemoAppPool" -ApplicationPoolAccount $admin –AuthenticationProvider $ap
+
+Mount-SPContentDatabase "ContentDB1"   -webApplication http://localhost:8333 
+
+------------------------------
+
+Test-SPContentDatabase 
+
+Get-SPContentDatabase | ft   -Auto Name, NeedsUpgradeIncludeChildren

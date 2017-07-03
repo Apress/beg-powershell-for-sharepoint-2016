@@ -1,0 +1,142 @@
+Import-Module Microsoft.Online.SharePoint.PowerShell –DisableNameChecking
+
+Connect-SPOService -URL https://PoShSP2016-admin.sharepoint.com -Credential  PoShSP2016@PoSHSP2016.onmicrosoft.com
+
+-------------------------------------------------------------------------------
+
+Listing Available Commands
+
+$spo = Get-Command | 
+Where{$_.ModuleName -eq "Microsoft.Online.SharePoint.PowerShell"}
+
+-------------------------------------------------------------------------------
+SharePoint Online Cmdlets
+
+
+$url = Read-Host "What is your Site's Url"
+$site = Get-SPOSite $url
+
+$members = $site | Get-Member | Where{$_.MemberType -eq "Property"}
+for($i = 0; $i -lt $members.Count; $i++)
+{
+	$name = $members[$i].Name
+	Write-Host $name":" $site.$name
+}
+
+-------------------------------------------------------------------------------
+
+New-SPOSite -URL https://PoShSP2016.sharepoint.com/sites/dev -Owner PoShSP2016@PoShSP2016.OnMicrosoft.com -StorageQuota 500 -Template DEV#0
+ 
+-------------------------------------------------------------------------------
+
+Remove-SPOSite https://PoShSP2016.sharepoint.com/sites/dev
+ 
+
+-------------------------------------------------------------------------------
+
+Repair-SPOSite https://PoShSP2016.sharepoint.com
+ 
+-------------------------------------------------------------------------------
+
+Set-SPOSite https://PoShSP2016.sharepoint.com -Title "This is me showing the Set-SPOSite cmdlet"
+
+
+-------------------------------------------------------------------------------
+
+Restore-SPODeletedSite https://PoShSP2016.SharePoint.com/sites/Dev
+-------------------------------------------------------------------------------
+
+Remove-SPODeletedSite https://PoShSP2016.sharepoint.com/sites/dev
+
+-------------------------------------------------------------------------------
+
+$groups = Get-SPOSiteGroup https://PoShSP2016.sharepoint.com/Search
+$translationMgt = $groups | Where{$_.Title -eq "Translation Managers"}
+$translationMgt.Roles
+
+
+-------------------------------------------------------------------------------
+New-SPOSiteGroup https://PoShSP2016.sharepoint.com 
+-Group "MyNewGroup" -PermissionLevels "Contribute", "Design"
+
+-------------------------------------------------------------------------------
+
+Remove-SPOSiteGroup https://PoShSP2016.sharepoint.com 
+-Identity "MyNewGroup"
+
+-------------------------------------------------------------------------------
+Set-SPOSiteGroup https://PoShSP2016.sharepoint.com -Identity "Team Site Visitors" 
+-PermissionLevelsToRemove "Read" -PermissionLevelsToAdd "Contribute"
+ 
+ -------------------------------------------------------------------------------
+ 
+ $users = Get-SPOUser https://PoShSP2016.sharepoint.com
+ -------------------------------------------------------------------------------
+ 
+ Get-SPOExternalUser
+ 
+ 
+ -------------------------------------------------------------------------------
+ 
+ # Prompts for the external user's login name;
+$extUserName = Read-Host "External User Name?"
+
+# Gets a list of all available site collections in the current tenant;
+$sites = Get-SPOSite
+
+# Loops through all site collections
+for($i = 0; $i -lt $sites.Count; $i++)
+{
+    # Query the list of users for the current site collection to see if external user is in 
+    # there;
+    $user = Get-SPOUser $sites[$i].Url | Where{$_.LoginName -like "*$extUserName"}
+    if($user -ne $null)
+    {
+        # If the user has been found, print the site's Url he has been found in;
+        Write-Host $sites[$i].Url 
+    }
+}
+ 
+-------------------------------------------------------------------------------
+ 
+ Remove-SPOUser https://PoShSP2016.sharepoint.com 
+-LoginName powershellbook_outlook_com#ext#@poshsp2016.onmicrosoft.com
+
+-------------------------------------------------------------------------------
+# Get the external user login name;
+$extUser = Read-Host "External User Login Name?"
+
+# Get a list of all site collection;
+$sites = Get-SPOSite
+
+for($i = 0; $i -lt $sites.Count; $i++)
+{
+    $user = Get-SPOUser $sites[$i].Url | Where{$_.LoginName -like "*$extUser"}
+    if($user -ne $null)
+    {
+        # Remove the user from the site collection;
+        Remove-SPOUser $sites[$i] -LoginName $user.LoginName
+    }
+}
+-------------------------------------------------------------------------------
+Set-SPOUser https:// PoShSP2016.sharepoint.com -LoginName PoShSP2016@ PoShSP2016.OnMicrosoft.com -IsSiteCollectionAdmin $false
+
+-------------------------------------------------------------------------------
+$timerClockApp = Get-SPOAppInfo -Name "Timer"
+
+-------------------------------------------------------------------------------
+$myCrashingApp = Get-SPOAppInfo -Name "MyCrashingApp"
+Get-SPOAppErrors $myCrashingApp.ProductId
+
+-------------------------------------------------------------------------------
+
+Get-SPOTenant
+
+-------------------------------------------------------------------------------
+
+Set-SPOSite https://PoShSP2016.sharepoint.com/sites/dev -LockState NoAccess
+Set-SPOTenant -NoAccessRedirectUrl https://NikCharlebois.com
+
+
+
+

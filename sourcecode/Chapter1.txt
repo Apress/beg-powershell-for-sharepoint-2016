@@ -1,0 +1,9 @@
+[System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SharePoint")
+$site = New-Object Microsoft.SharePoint.SPSite("http://localhost")
+$web = $site.RootWeb
+$title = $web.Title
+
+Using PowerShell with SharePoint, the same operation can now be achieved using the following two lines of PowerShell:
+$web = Get-SPWeb http://localhost
+$title = $web.Title
+

@@ -1,0 +1,59 @@
+File Size
+
+$webApp = Get-SPWebApplication http://localhost
+$webApp.MaximumFileSize = 5000
+$webApp.Update()
+-------------------------------------------------------------
+
+Figure 2.7:
+$account = Get-SPManagedAccount "contoso\<App Pool User Account>"
+$appPool = New-SPServiceApplicationPool -Name "UserProfile" -Account $account
+
+$userProfileSA = New-SPProfileServiceApplication -ApplicationPool $appPool -Name "UPS"
+
+New-SPProfileServiceApplicationProxy -ServiceApplication $userProfileSA -Name "UPSProxy"
+
+-----------------------------------------------------------------
+Fast site creation:
+
+The Microsoft SharePoint 2016 PowerShell snapin introduces 6 new cmdlets to allow us to interact with the site masters:
+Disable-SPWebTemplateForSiteMaster
+Enable-SPWebTemplateForSiteMaster
+Get-SPSiteMaster
+Get-SPWebTemplatesEnabledForSiteMaster
+New-SPSiteMaster
+Remove-SPSiteMaster
+
+-----------------------------------------------------------------
+
+Disable-SPWebTemplateForSiteMaster –Template #STS#0
+
+Enable-SPWebTemplateForSiteMaster –Template STS#0
+
+------------------------------------------------------------------
+
+New-SPSiteMaster –Template STS#0 –ContentDatabase "WSS_Content"
+
+Get-SPSiteMaster –ContentDatabase "WSS_Content"
+
+-------------------------------------------------------------------
+
+New-SPSite http://localhost/sites/FC1 -Template "STS#0" –ContentDatabase "WSS_Content" –OwnerAlias "Contoso\<user account>" –CreateFromSiteMaster
+-------------------------------------------------------------------
+
+Figure 2-19. Disabling the automatic indexing of a SharEPoint 2016 list using PowerShell
+
+$web = Get-SPWeb http://localhost
+$list = $web.Lists["Documents"]
+$list.EnableManagedIndexes = $false
+$list.Update()
+----------------------------------------------------------------------
+
+Figure 2-21. Listing all fields included in a SharePoint list's index using PowerShell
+
+$web = Get-SPWeb http://localhost 
+$list = $web.Lists["Documents"]
+$list.Fields | Where{$_.Indexable –eq $true} | Select Title
+
+----------------------------------------------------------------------
+

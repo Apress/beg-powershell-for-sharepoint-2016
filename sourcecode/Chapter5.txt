@@ -1,0 +1,469 @@
+Site Collection
+
+$siteCol = Get-SPSite http://localhost
+--
+Move-SPSite http://localhost -DestinationDatabase NewContentDB
+
+--
+Copy-SPSite http://localhost http://localhost/sites/destination
+--
+New-SPSite http://localhost/sites/test -OwnerAlias "Jen\spadmin"
+
+--
+Set-SPSite http://localhost/sites/test -MaxSize 2000
+
+--
+$siteCol = Get-SPSite http://localhost/sites/test
+$siteCol.Quota.StorageMaximumLevel = 2000
+
+--
+Remove-SPSite http://localhost/sites/test
+
+
+-------------------------------------------------------
+Get-SPDeletedSite
+$colSiteCol = Get-SPDeletedSite
+$colSiteCol.Length
+$colSiteCol[0].Path
+$colSiteCol[0] | get-member 
+
+-------------------------------------------------------
+Remove-SPDeletedSite 
+
+Remove-SPDeletedSite /sites/CreatedUI
+
+-------------------------------------------------------
+
+Restore-SPDeletedSite
+
+Restore-SPDeletedSite /sites/CreatedUI
+-------------------------------------------------------
+
+
+Putting It Together: Creating a Site Collections Structure
+"Administration", "Finance", "Human Resources", "Directors", "Tech Support" |
+%{New-SPSite http://localhost/sites/$_ -OwnerAlias contoso\administrator -Template "STS#0"}
+
+-------------------------------------------------------
+
+Webs
+Get-SPWeb "http://localhost/sites/HumanResources"
+
+New-SPWeb http://localhost/NewWeb -Template "STS#1"
+
+Remove-SPWeb http://localhost/NewWeb
+
+Set-SPWeb http://localhost/NewWeb -RelativeUrl ModifiedWeb
+
+Export-SPWeb http://localhost/ModifiedWeb -Path "C:\ExportedWeb.cmp"
+
+
+New-SPWeb https://localhost/MyImportedWeb
+Import-SPWeb http://localhost/MyImportedWeb -Path "C:\ExportedWeb.cmp"
+
+
+
+----------------
+
+$team = @{}
+$team["Finance"] = @("Payroll", "Financial Systems", "Procurement")
+$team["Human Resources"] = @("Training", "Staff Services", "Recruiting")
+$team["Administration"] = @("Executive Assistants", "Planification")
+$team["Directors"] = @("CIO", "CEO", "COO")
+$team["Tech Support"] = @("Help Desk", "Applications", "Infrastructure")
+
+
+$theme = @{}
+$theme["Finance"] = "Sea Monster"
+$theme["Human Resources"] = "Sketch"
+$theme["Administration"] = "Characters"
+$theme["Directors"] = "Wood"
+$theme["Tech Support"] = "Nature"
+
+$site = Get-SPSite "http://localhost/sites/Finance"
+$catalog= $site.GetCatalog("Design")
+$theme = $catalog.Items | Where {$_.Name -eq "Sea Monster"}
+
+$color = $theme["ThemeUrl"].Split(',')[1].Trim()
+$font = $theme["FontSchemeUrl"].Split(',')[1].Trim()
+$image = $theme["ImageUrl"].Split(',')[1].Trim()
+write-host $color
+write-host $font
+write-host $image
+
+
+--------------------
+
+foreach($businessUnit in $teamArray.Keys) # this returns a list of business units
+{
+    foreach($team in $teamArray[$businessUnit]
+    {
+        # At this point we have access to the teams' names, and we can dynamically
+        # build the urls for the composed looks using that information    }
+}
+
+
+#Declaring the various components of composed look for each team
+$themeArray = @{}
+$themeArray["Finance"] = "Sea Monster"
+$themeArray["Human Resources"] = "Sketch"
+$themeArray["Administration"] = "Characters"
+$themeArray["Directors"] = "Wood"
+$themeArray["Tech Support"] = "Nature"
+ 
+foreach($businessUnit in $teamArray.Keys)
+{
+    $site = Get-SPSite "http://localhost/sites/$businessUnit"
+    $catalog = $site.GetCatalog("Design")
+    $theme = $catalog.Items | Where {$_.Name -eq $themeArray[$businessUnit]}
+ 
+    foreach($team in $teamArray[$businessUnit])
+    {
+        $web = New-SPWeb "http://localhost/sites/$businessUnit/$team " -Template STS#0 -Name $team
+ 
+        $color = $theme["ThemeUrl"].Split(',')[1].Trim()
+        $font = $theme["FontSchemeUrl"].Split(',')[1].Trim()
+        $image = $theme["ImageUrl"].Split(',')[1].Trim()
+        write-host $color
+        $web.ApplyTheme($color, $font, $image, $true)
+        write-host $team -backgroundcolor green
+ 
+        $web.Dispose()
+    }
+    $site.Dispose()
+}
+
+
+
+-------------------------------------------------------
+Lists:
+$web = Get-SPWeb http://localhost
+$list = $web.Lists["Style Library"]
+$fields = $list.Fields.InternalName
+$fields | Where {$_ -like '*workflow*'}
+
+$web = Get-SPWeb http://localhost
+$web.ListTemplates.Name
+
+
+$web = Get-SPWeb http://localhost
+$ID = $web.Lists.Add("My List", "My Description", $web.ListTemplates["Custom List"])
+$ID
+
+
+$web = Get-SPWeb http://localhost
+$list = $web.Lists["My List"]
+$list.Delete()
+
+-------
+
+Restoring a List Instance
+
+$spsite = Get-SPSite http://localhost
+$bin = $spsite.RecycleBin
+$myList = $bin | Where{$_.ItemType -eq "List"}
+$myList
+$myList.Restore()
+
+----------
+
+Copying a List Instance
+
+$web = Get-SPWeb http://localhost
+$list = $web.Lists["My List"]
+$list.SaveAsTemplate("MyTemplate", "My Template", "This is my custom list", $true)
+
+
+$site = Get-SPSite http://localhost
+$customTemplates = $site.GetCustomListTemplates($site.RootWeb)
+$customTemplates
+
+
+$myListTemplate = $customTemplates | Where {$_.Name -eq "My Template"}
+
+
+$web.Lists.Add("My Copy", # Title
+        "Description", # List Description
+        "Lists/MyCopy", # Relative URL 
+        $myListTemplate.FeatureId, # Feature Id of custom template
+        100, # List Type - 100 is for none
+        "101") # Document Template Type - 101 is for none
+
+		
+		
+		
+----------		
+		
+Putting It Together: Creating Common Lists
+		
+		
+
+$webApp = Get-SPWebApplication http://localhost
+ 
+foreach($site in $webApp.Sites)
+{
+    foreach($web in $site.AllWebs)
+    {
+        $web.Lists.Add("Business Documents", "",
+            $web.ListTemplates["Document Library"]);
+        $web.Lists.Add("Unit Tasks", "", $web.ListTemplates["Tasks"]);
+    }
+}
+
+----------
+
+# Assuming a SharePoint List that contains a list of fruits and their unit price.
+ 
+$web = Get-SPWeb http://localhost
+$fruitsList = $web.Lists["Fruits"]
+ 
+# Scenario A - Get a reference to the apple item
+ 
+# Option 1 - Write a CAML Query
+$query = "<Where><Eq><FieldRef Name='Title' /><Value Type='Text'>Apple</Value></Eq></Where>";
+$spQuery = New-Object Microsoft.SharePoint.SPQuery
+$spQuery.Query = $query
+ 
+$items = $fruitsList.GetItems($spQuery)
+$items[0].Title
+ 
+# Option 2 - Use PowerShell to query by property
+$items = $fruitsList.Items | Where {$_.Title -eq "Apple"}
+$items.Title
+
+
+------
+
+# Scenario B - Get items that are 4$ and over
+ 
+# Option 1 - Write a CAML Query
+$query = "<Where><Gt><FieldRef Name='Price' /><Value Type='Currency'>4</Value></Gt></Where>"
+$spQuery = New-Object Microsoft.SharePoint.SPQuery
+$spQuery.Query = $query
+ 
+$expItems = $fruitsList.GetItems($spQuery)
+$ expItems | select Title
+
+# Option 2 - Use PowerShell to query by property
+$expItems = $fruitsList.Items | Where{$_["Price"] -gt 4}
+$ expItems | select Title
+
+------
+
+Removing a List Item
+
+$web = Get-SPWeb http://localhost
+$fruitsList = $web.Lists["Fruits"]
+$position = 0
+foreach($fruit in $fruitsList.Items)
+{
+     Write-Host "Position $position :"  $fruit.Title - ID:   $fruit.Id
+$position++
+} 
+
+
+-------------
+
+apple item. If a match is found, then the item at the current position (the apple item) will be removed from the collection (see Figure 5-25):
+$web = Get-SPWeb http://localhost
+$fruitsList = $web.Lists["Fruits"]
+$appleItem = $fruitsList.Items | Where {$_.Title -eq "Apple"}
+$appleId = $appleItem.ID
+ 
+$position = 0;
+foreach($fruit in $fruitsList.Items)
+{
+    if($fruit.ID -eq $appleId)
+    {
+        $fruitsList.Items.Delete($position)
+    }
+    $position++ # Increases the current position
+}
+
+
+
+------------------------------------
+
+Creating a List Item
+
+$web = Get-SPWeb http://localhost
+$fruitsList = $web.Lists["Fruits"]
+
+$fruitsList.Items.count
+
+$newItem1 = $fruitsList.AddItem()
+$newItem1["Title"] = "Kiwi";
+$newItem1["Price"] = 6.99;
+$newItem1.Update()
+
+ $fruitsList.Items.count
+
+$newItem2 = $fruitsList.Items.Add()
+$newItem2["Title"] = "Grapes"
+$newItem2["Price"] = 5.99
+$newItem2.Update()
+
+ $fruitsList.Items.count
+
+ 
+ ----------------------------------
+ 
+ Updating a List Item
+ 
+ 
+$web = Get-SPWeb http://localhost
+$fruitsList = $web.Lists["Fruits"]
+ 
+$bananaItem = $fruitsList.Items | Where {$_.Title -eq "Banana"}
+$bananaItem["Price"] = 0.99
+$bananaItem.Update()
+
+
+-------------------------------------
+
+
+Putting It Together: Creating Default Tasks Items
+
+
+$webApp = Get-SPWebApplication http://localhost
+ 
+foreach($site in $webApp.Sites)
+{
+    foreach($web in $site.AllWebs)
+    {
+        $list = $web.Lists["Unit Tasks"]
+        $newTask = $list.AddItem();
+        $newTask["Title"] = "Get familiar with your unit's SharePoint workspace"
+        $today = [System.DateTime]::Now
+        $nextWeek = $today.AddDays(7)
+        $newTask["DueDate"] = $nextWeek
+        $newTask.Update()
+    }
+}
+
+
+
+
+
+------------------------------------------
+List Fields
+Getting an Instance of a Field
+
+
+$web = Get-SPWeb http://localhost
+$listID = $web.Lists.Add("DemoList", "", $web.ListTemplates["Custom List"])
+$list = $web.Lists[$listID]
+foreach($field in $list.Fields)
+{
+    write-host $field.InternalName" - Hidden:" $field.Hidden" - ReadOnly:" field.ReadOnlyField
+}
+
+-----
+Creating a New Field
+
+$web = Get-SPWeb http://localhost
+$demoList = $web.Lists["DemoList"]
+$fieldID = $demoList.Fields.Add("HairColor", [Microsoft.SharePoint.SPFieldType]::Choice, $true)
+$myNewChoiceField = $demoList.Fields["HairColor"]
+ 
+$myNewChoiceField.Choices.Add("Brown")
+$myNewChoiceField.Choices.Add("Blond")
+$myNewChoiceField.Choices.Add("Red")
+$myNewChoiceField.Choices.Add("Black")
+$myNewChoiceField.Choices.Add("Grey")
+$myNewChoiceField.Choices.Add("None")
+ 
+# Need to call the Update() method in order for the choices to appear on interface
+$myNewChoiceField.Update()
+
+----
+
+Removing a Field
+
+$web = Get-SPWeb http://localhost
+$demoList = $web.Lists["DemoList"]
+$field = $demoList.Fields["HairColor"]
+$field.Delete()
+
+
+-----
+List Permissions on an Object
+
+$web = http://localhost
+$newListId = $web.Lists.Add("Secure", "", $web.ListTemplates["Custom List"])
+$secureList = $web.Lists[$newListId]
+
+
+
+$newListId = $web.Lists.Add("Secure", "", $web.ListTemplates["Custom List"])
+$secureList = $web.Lists[$newListId]
+$secureList.RoleAssignments
+
+
+--------
+
+Breaking Permission Inheritance
+
+$web = Get-SPWeb http://localhost
+$secureList = $web.Lists["Secure"]
+$secureList.BreakRoleInheritance($false)
+
+
+--------------
+Granting New Permissions
+
+$web = Get-SPWeb http://localhost
+$fullControlRoleDefinition = $web.RoleDefinitions["Full Control"]
+
+
+
+
+$roleAssignment = New-Object Microsoft.SharePoint.SPRoleAssignment("DOMAIN\\UserName","username@domain.com ","Display_Name","Notes about the assignment");
+
+$bindings = $roleAssignment.RoleDefinitionBindings
+$bindings.Add($fullControlRoleDefinition)
+$secureList.RoleAssignments.Add($roleAssignment)
+
+
+-----
+
+Removing Permissions
+
+$web = Get-SPWeb http://localhost
+$secureList = $web.Lists["Secure"]
+$secureList.RoleAssignments.Remove($web.EnsureUser("CONTOSO\Administrator"))
+
+
+------------------------------------------------------
+
+Scenario #1 - Bad Memory Management
+
+for($i = 0; $i -le 10000; $i++)
+{
+    foreach($site in $webApp.Sites)
+    {
+        foreach($web in $site.AllWebs)
+        {
+            Write-host $web.Title
+        }
+    }
+}
+
+---------------------------------------------------------
+
+Scenario #2 - Good Memory Management
+
+$webApp = Get-SPWebApplication http://localhost
+for($i = 0; $i -le 10000; $i++)
+{
+    foreach($site in $webApp.Sites)
+    {
+        foreach($web in $site.AllWebs)
+        {
+            Write-host $web.Title
+            $web.Dispose()
+        }
+        $site.Dispose()
+    }
+}
+

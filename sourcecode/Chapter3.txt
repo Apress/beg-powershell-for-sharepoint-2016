@@ -1,0 +1,112 @@
+Add-PSSnapin Microsoft.SharePoint.PowerShell
+Get-PSSnapin –Registered
+
+---------------------------------------------------
+
+Get-Module -ListAvailable
+
+---------------------------------------------------
+
+Write-Host "See how cool this is?" -Backgroundcolor yellow -Foregroundcolor red
+
+---------------------------------------------------
+
+$myVariableText = "My favorite number is:"
+$myVariableNumber = 7
+Write-Host $myVariable $myVariableNumber
+
+---------------------------------------------------
+
+# The following variable contains the number of Days in the week
+$numDaysInWeek = 7
+<# The following lines of code does two things:
+1 – Reads the answer  to the question from the user;
+2 – Validate the answer #>
+$answer = Read-Host "How many days in a week?"
+if($answer –eq 7)
+{
+    Write-Host "You are correct"
+}
+else
+{
+Write-Host "Wrong answer!"
+}
+
+---------------------------------------------------
+
+$stringValue = "12"
+Write-Host ([int] $stringValue +13)
+Write-Host $stringValue + 13
+
+---------------------------------------------------
+
+
+Decisions
+
+$number = Read-Host "Please enter a positive number:"
+<# Use the modulo operation to divide the number by 2. Module returns the remainder of a division operation. If the result is 0 then the number is even, otherwise it is odd. #>
+$result = $number % 2
+if($result –eq 0)
+{
+Write-Host "The number is even!"
+}
+else
+{
+Write-Host "The number is odd!"
+}
+---------------------------------------------------
+
+Arrays
+
+$words = @('My', 'is ' , ' favorite number ')
+$numbers = @(2,3,2)
+$combined = $words + $numbers
+
+# Array now looks like ('My ', ' is ', ' favorite number ', 2, 3, 2)
+$fav = $combined[3] + $combined[5]
+$sentence = $combined[0] + $combined[2] + $combined[1]
+
+$sentence + $fav
+---------------------------------------------------
+Graphical User Interface
+
+Add-Type -AssemblyName System.Windows.Forms
+$form = New-Object Windows.Forms.Form
+$form.Height = 100
+
+$name = read-host "What is your name?"
+
+$lblWelcome = New-Object System.Windows.Forms.Label
+$lblWelcome.Text = "Welcome $name !"
+
+$form.Controls.Add($lblWelcome)
+$form.ShowDialog()
+
+---------------------------------------------------
+
+Demo Project—Selective Deletion of Files in a Folder
+
+$rollback = Read-Host "Run in Test mode? (Y/N)"
+
+# Get path the the folder
+$folderPath = read-host "Folder Path"
+
+# Get all files in specified folder and loop through each;
+$files = Get-ChildItem $folderPath
+foreach($file in $files)
+{
+    if($file.Extension -eq ".txt") # Check for files with the TXT extension
+    {
+        if($rollback.ToLower() -eq "y")
+        {
+            Remove-Item $file.FullName -WhatIf
+        }
+        elseif($rollback.ToLower() -eq "n") #Notice how elseif is spelled in one word in PowerShell
+        {
+            Remove-Item $file.FullName
+        }
+    }
+}
+
+
+

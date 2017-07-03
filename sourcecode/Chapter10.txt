@@ -1,0 +1,82 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Management;
+using System.Management.Automation;
+using Microsoft.SharePoint;
+using Microsoft.SharePoint.Administration;
+
+
+namespace GetSitesModule
+{
+    [System.Management.Automation.Cmdlet(System.Management.Automation.VerbsCommon.Get, "SPAllSites")]
+    public class GetAllSites : Cmdlet
+    {
+        [System.Management.Automation.Parameter(Position = 0, Mandatory = true)]
+        public string WebApplicationName;
+
+        protected override void ProcessRecord()
+        {
+            SPFarm farm = SPFarm.Local;
+            SPWebService service = farm.Services.GetValue<SPWebService>("");
+            foreach(SPSite site in service.WebApplications[WebApplicationName].Sites)
+
+            {
+                //Site collections
+                this.WriteObject(site.RootWeb.Url);
+            }
+                 
+        }
+    }
+}
+
+
+Import-Module c:\GetSitesModule.dll
+
+
+Get-SPAllSites -WebApplicationName "Root"
+
+------------------------------------------------------------------------------------------------
+
+Function ContentReport (){ 
+ 
+
+ 
+$f1 = Get-SPDatabase
+$result  = $f1 | Select-Object DisplayName,WebApplication,CurrentSiteCount,disksizerequired,WarningSiteCount,MaximumSiteCount
+if($result -ne $null)
+{
+   
+return $result  
+}
+ 
+
+}
+
+$Outputreport= ContentReport  
+
+
+
+Function FunctionName
+{
+param(
+	[string]$computerName
+
+)
+
+# put the function logic here
+}
+
+
+
+Param(
+  [Parameter(Mandatory=$True,Position=1)]
+   [string]$computerName,
+	
+   [Parameter(Mandatory=$True)]
+   [string]$filePath
+)
+
+

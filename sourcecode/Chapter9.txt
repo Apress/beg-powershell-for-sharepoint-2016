@@ -1,0 +1,149 @@
+Farm Solutions:
+
+Add-SPSolution 
+
+Install-SPSolution –Identity testsolution.wsp -GACDeploy -Time "2017-1-18 12:00:00"
+
+
+Uninstall-SPSolution –Identity TestSolution.wsp -Confirm:$false
+
+Remove-SPSolution -Identity TestSolution.wsp -Confirm:$false
+
+Update-SPSolution –Identity TestSolution.wsp -LiteralPath "C:\Solutions\Solutionv2.wsp"
+-GACDeploy
+
+-------------------------------------------------------------------------------------------
+Apps
+
+$adminAcc = Get-SPManagedAccount "jen\spadmin”
+$appMgmtPool = New-SPServiceApplicationPool -Name AppMgmtServiceAppPool -Account $adminAcc
+
+
+$appMgmtSvc = New-SPAppManagementServiceApplication –ApplicationPool 
+$appMgmtPool –Name AppManagementServiceApp –DatabaseName AppManagementDB
+
+$appMgmtProxy = New-SPAppManagementServiceApplicationProxy -ServiceApplication $appMgmtSvc -Name AppManagementProxy
+
+
+$service = Get-SPServiceInstance | Where{$_.TypeName -eq "App Management Service"}
+
+
+Option A:
+$service.Status = [Microsoft.SharePoint.Administration.SPObjectStatus]::Online
+$service.Update()
+Option B:
+Start-SPServiceInstance $service
+
+-------------------------------------------------------------------------------------------
+
+Microsoft SharePoint Foundation Subscription Settings Service Application
+
+
+$adminAcc = Get-SPManagedAccount "contoso\administrator"
+$subSettingsPool = New-SPServiceApplicationPool -Name SubSettingsServiceAppPool -Account $adminAcc
+ 
+$subSettingsService = New-SPSubscriptionSettingsServiceApplication -Name SubSettingsService -DatabaseName SubSettingsDB -ApplicationPool $subSettingsPool
+
+
+$subSettingsProxy = New-SPSubscriptionSettingsServiceApplicationProxy -ServiceApplication $subSettingsService
+
+
+Set-SPAppDomain -AppDomain "app.jen.com"
+Set-SPAppSiteSubscriptionName -Name "apps" -Confirm:$false
+
+
+Add-DnsServerResourceRecordCName -Name "*.app" -HostNameAlias "jen.com" -ZoneName "jen.com"
+
+-------------------------------------------------------------------------------------------
+
+Importing an App Package
+
+
+$app = Import-SPAppPackage -Path C:\test.app -Site http://localhost/
+-Source ([Microsoft.SharePoint.Administration.SPAppSource]::ObjectModel)
+
+-------------------------------------------------------------------------------------------
+Exporting App Packages
+
+$app = Get-SPAppInstance -Web http://localhost | Where {$_.Title -like "appname*"}
+Export-SPAppPackage -App $app.App -Path "C:\appname.app"
+
+-------------------------------------------------------------------------------------------
+Installing an App Package
+
+$contentDB = Get-SPContentDatabase -WebApplication http://localhost
+Add-SPShellAdmin -UserName jen\testuser -Database $contentDB
+
+
+$testApp = Import-SPAppPackage -Path "C:\test.app" -Site http://localhost 
+Install-SPApp -Web http://localhost -Identity $testapp
+
+-------------------------------------------------------------------------------------------
+
+Uninstalling a SharePoint App
+
+
+$testApp = Get-SPAppInstance -Web http://localhost | Where{$_.Title -like "test*"}
+Uninstall-SPAppInstance -Identity $testApp
+
+
+# Prompt the user to enter the name of the app to check for instances of
+$appTitle = Read-Host "What is the name of your app?"
+ 
+# Get a reference to the Web Application on port 80
+$webApp = Get-SPWebApplication http://localhost
+ 
+# Loop through all site collections in the Web Aplication
+foreach($site in $webApp.Sites)
+{
+    # Loop through each Web in the current site collection
+    foreach($web in $site.AllWebs)
+    {
+        # Query the current site for an instance of our app
+        $appInstance = Get-SPAppInstance -Web $web.Url |
+            Where {$_.Title -like "*$appTitle*"}
+                 
+        # If the appInstance variable is not null, then an instance was found
+        if($appInstance -ne $null)
+        {
+            Write-Host $web.Url -BackgroundColor "green"
+        }
+         
+        $web.Dispose()
+    }
+    $site.Dispose()
+}
+
+-------------------------------------------------------------------------------------------
+The App Catalog
+
+
+$catalogSite = New-SPSite -Url http://localhost/sites/appcatalog -OwnerAlias "contoso\administrator" -Name "App Catalog" -Template "APPCATALOG#0"
+
+Update-SPAppCatalogConfiguration -Site http://localhost/sites/appcatalog
+
+
+$web = Get-SPWeb http://localhost/sites/appcatalog
+ 
+#Gets a reference to the AppCatalog library
+$appCatalog = $web.GetFolder("AppCatalog")
+$appFiles = $appCatalog.Files
+ 
+$myAppPackage = Get-ChildItem C:\Apps\ChapterRestrictedApp.App
+$appFiles.Add("AppCatalog/ChapterRestrictedApp.App", $myAppPackage.OpenRead(), $false);
+
+
+---------------------------------------------------------------------------------------------
+
+Updating an Existing App
+
+
+$financeAppInstance = Get-SPAppInstance -Web http://localhost/sites/Finance |
+Where {$_.Title -eq "ChapterRestrictedApp"}
+ 
+$newestPackage = Import-SPAppPackage -Path C:\Temp\ChapterRestrictedApp-1.0.0.4.app
+-Site http://localhost/sites/Finance
+-Source ([Microsoft.SharePoint.Administration.SPAppSource]::CorporateCatalog)
+ 
+Update-SPAppInstance -Identity $financeAppInstance -App $newestPackage
+
